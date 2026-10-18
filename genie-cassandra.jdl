@@ -1,0 +1,117 @@
+/*
+ * This is a microservice e-commerce store sample with Gateway and three microservice applications.
+ * This uses eureka for service discovery and OIDC authentication.
+ * This also creates the required Kubernetes deployment manifests.
+ */
+ 
+application {
+  config {
+    baseName genie_gateway
+    applicationType gateway
+    packageName net.genie.gateway
+    authenticationType oauth2
+    prodDatabaseType postgresql
+    reactive true
+    buildTool maven
+    skipClient true
+  }
+  entities *
+}
+
+
+application {
+  config {
+    baseName genie_member
+    applicationType microservice
+    packageName net.genie.member
+    authenticationType oauth2
+    prodDatabaseType postgresql
+    reactive true
+    buildTool maven
+    serverPort 8081
+  }
+  entities Member, ChildrenByFather, ChildrenByMother
+}
+
+
+/**
+ * Entities for Store Gateway
+ */
+
+// Customer for the store
+entity User {
+    firstName String required
+    lastName String required
+    gender Gender required
+    email String required pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
+    phone String required
+    addressLine1 String required
+    addressLine2 String
+    city String required
+    country String required
+}
+
+enum Gender {
+    MALE, FEMALE
+}
+
+
+service User with serviceClass
+paginate User with infinite-scroll
+
+
+/**
+ * Entities for product microservice
+ */
+
+
+// Product sold by the Online store 
+entity Member {
+    id String required
+    firstName String required
+    lastName String required
+    description String
+    gender Gender
+    dob Date
+    description String
+    imageUrl String
+}
+
+// Parent Child linkage
+entity ChildrenByFather {
+  fatherId String required
+  childId String required
+  motherId String
+  firstName String required
+  lastName String required
+  gender Gender
+  dob Date
+}
+
+entity ChildrenByMother {
+  motherId String required
+  childId String required
+  fatherId String
+  firstName String required
+  lastName String required
+  gender Gender
+  dob Date
+}
+
+service Member, ChildrenByFather, ChildrenByMother with serviceClass
+paginate Member, ChildrenByFather, ChildrenByMother with infinite-scroll
+microservice Member, ChildrenByFather, ChildrenByMother with genie_member
+
+
+/**
+ * Deployments
+ */
+
+deployment {
+  deploymentType kubernetes
+  appsFolders [genie_gateway, genie_member]
+  dockerRepositoryName "registry.anyuruf.net" // @Replace With Your Docker repo name@
+  serviceDiscoveryType no
+  istio false
+  kubernetesNamespace genie-domain
+}

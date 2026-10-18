@@ -1,0 +1,29 @@
+{
+  "generator-jhipster": {
+    "applicationIndex": 0,
+    "applicationType": "gateway",
+    "applications": {
+      "genie_member": {
+        "applicationIndex": 1,
+        "serverPort": "8081"
+      }
+    },
+    "authenticationType": "oauth2",
+    "baseName": "genie_gateway",
+    "buildTool": "maven",
+    "creationTimestamp": 1703629085272,
+    "entities": ["User", "Member", "ChildrenByFather", "ChildrenByMother"],
+    "jhipsterVersion": "9.4.0",
+    "jwtSecretKey": "MDM2NmQwMjE2MmM0ZmRhZWJhNzg0Nzk3MWRmZTg1ZTY1OWI2NWZkZGVkNmIwZTgxOTNjYmE0NmJkMWY0Y2JjZDA0ZTgzZGJlMzI5Y2Y3ZDY3NjBmODdmY2E1MmRkNzY3ODIxOGY3YmM0NzUwZDE5ODM4YjBkMGNmMzk4ZGZlMTc=",
+    "languages": ["en"],
+    "lastLiquibaseTimestamp": 1703629265000,
+    "monorepository": true,
+    "nativeLanguage": "en",
+    "packageName": "net.genie.gateway",
+    "prodDatabaseType": "postgresql",
+    "reactive": true,
+    "serverPort": 8080,
+    "skipClient": true,
+    "skipCommitHook": true
+  }
+}

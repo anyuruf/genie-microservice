@@ -1,0 +1,49 @@
+{
+  "annotations": {
+    "changelogDate": "20231226222005"
+  },
+  "applications": ["genie_gateway", "genie_member"],
+  "clientRootFolder": "genie_member",
+  "databaseType": "sql",
+  "fields": [
+    {
+      "fieldName": "fatherId",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "childId",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "motherId",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "firstName",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "lastName",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "gender",
+      "fieldType": "Gender",
+      "fieldValues": "MALE,FEMALE"
+    },
+    {
+      "fieldName": "dob",
+      "fieldType": "Date"
+    }
+  ],
+  "microserviceName": "genie_member",
+  "name": "ChildrenByFather",
+  "pagination": "infinite-scroll",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}

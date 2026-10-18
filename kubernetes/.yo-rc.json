@@ -1,0 +1,19 @@
+{
+  "generator-jhipster": {
+    "appsFolders": ["genie_gateway", "genie_member"],
+    "clusteredDbApps": [],
+    "deploymentType": "kubernetes",
+    "directoryPath": "../",
+    "dockerPushCommand": "docker push",
+    "dockerRepositoryName": "",
+    "ingressDomain": "",
+    "ingressType": "nginx",
+    "istio": false,
+    "kubernetesNamespace": "genie-domain",
+    "kubernetesServiceType": "LoadBalancer",
+    "kubernetesStorageClassName": "",
+    "kubernetesUseDynamicStorage": false,
+    "monitoring": "no",
+    "serviceDiscoveryType": "no"
+  }
+}

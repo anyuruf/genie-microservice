@@ -1,0 +1,8 @@
+{
+  "generator-jhipster": {
+    "appsFolders": ["genie_gateway", "genie_member"],
+    "baseName": "workspaces",
+    "defaultCommand": "workspaces",
+    "deploymentType": "none"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "generator-jhipster": {
+    "applicationIndex": 1,
+    "applicationType": "microservice",
+    "authenticationType": "oauth2",
+    "baseName": "genie_member",
+    "buildTool": "maven",
+    "creationTimestamp": 1703886261863,
+    "entities": ["Member", "ChildrenByFather", "ChildrenByMother"],
+    "jhipsterVersion": "9.4.0",
+    "jwtSecretKey": "MjNlMWM4ODkxMDAzMTA2ZTZhMDEwYjljYWUwNmVkNzc5ZWY0MzI1OTQwN2I4ZDFmOTRjYmZlZGYzNzZmNTEzYWYwMDFiODNiY2NiMTdhZmVkODI5ZDE1NDlhOTdkNTkxOTJiMjJmOTE5NzhlNDBiYTdjYjc4ZjI5ZTU5ZTVkMGE=",
+    "languages": ["en"],
+    "lastLiquibaseTimestamp": 1703886441000,
+    "monorepository": true,
+    "nativeLanguage": "en",
+    "packageName": "net.genie.member",
+    "prodDatabaseType": "postgresql",
+    "reactive": true,
+    "serverPort": "8081",
+    "skipClient": true,
+    "skipCommitHook": true
+  }
+}
