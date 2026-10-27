@@ -24,7 +24,7 @@ public class Member implements Serializable, Persistable<String> {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @NotNull
+
     @Id
     @Column("id")
     private String id;

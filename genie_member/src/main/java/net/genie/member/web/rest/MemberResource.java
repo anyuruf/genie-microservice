@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.UUID;
 import java.util.Objects;
 import net.genie.member.domain.Member;
 import net.genie.member.repository.MemberRepository;
@@ -63,7 +64,7 @@ public class MemberResource {
         if (member.getId() != null) {
             throw new BadRequestAlertException("A new member cannot already have an ID", ENTITY_NAME, "idexists");
         }
-        member.setId(UUID.randomUUID());
+        member.setId(UUID.randomUUID().toString());
         return memberService.save(member).map(result -> {
             try {
                 return ResponseEntity.created(new URI("/api/members/" + result.getId()))

@@ -13,7 +13,7 @@ application {
     prodDatabaseType postgresql
     reactive true
     buildTool maven
-    skipClient true
+    skipServer true
   }
   entities *
 }

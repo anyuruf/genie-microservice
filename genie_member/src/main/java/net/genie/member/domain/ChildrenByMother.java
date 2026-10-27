@@ -13,7 +13,6 @@ import org.springframework.data.relational.core.mapping.Table;
  * A ChildrenByMother.
  */
 @Table("children_by_mother")
-@SuppressWarnings("common-java:DuplicatedBlocks")
 public class ChildrenByMother implements Serializable {
 
     @Serial
