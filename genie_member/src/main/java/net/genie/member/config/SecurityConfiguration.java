@@ -87,13 +87,7 @@ public class SecurityConfiguration {
     Converter<Jwt, Mono<AbstractAuthenticationToken>> jwtAuthenticationConverter() {
         ReactiveJwtAuthenticationConverter jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(
-            new Converter<Jwt, Flux<GrantedAuthority>>() {
-                @Override
-                public Flux<GrantedAuthority> convert(Jwt jwt) {
-                    return Flux.fromIterable(SecurityUtils.extractAuthorityFromClaims(jwt.getClaims()));
-                }
-            }
-        );
+             jwt -> Flux.fromIterable(SecurityUtils.extractAuthorityFromClaims(jwt.getClaims())));
         jwtAuthenticationConverter.setPrincipalClaimName(PREFERRED_USERNAME);
         return jwtAuthenticationConverter;
     }
@@ -107,9 +101,9 @@ public class SecurityConfiguration {
     public ReactiveOAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
         final OidcReactiveOAuth2UserService delegate = new OidcReactiveOAuth2UserService();
 
-        return userRequest -> {
+        return userRequest ->
             // Delegate to the default implementation for loading a user
-            return delegate.loadUser(userRequest).map(user -> {
+             delegate.loadUser(userRequest).map(user -> {
                 Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
 
                 user.getAuthorities().forEach(authority -> {
@@ -120,7 +114,6 @@ public class SecurityConfiguration {
 
                 return new DefaultOidcUser(mappedAuthorities, user.getIdToken(), user.getUserInfo(), PREFERRED_USERNAME);
             });
-        };
     }
 
     @Bean
