@@ -75,8 +75,6 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler implemen
         return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex), HttpStatusCode.valueOf(pdCause.getStatus()), request);
     }
 
-    @SuppressWarnings("java:S2638")
-    @Nullable
     @Override
     protected Mono<ResponseEntity<Object>> handleExceptionInternal(
         Exception ex,
@@ -85,7 +83,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler implemen
         HttpStatusCode statusCode,
         ServerWebExchange request
     ) {
-        body = body == null ? wrapAndCustomizeProblem(ex, (ServerWebExchange) request) : body;
+        body = body == null ? wrapAndCustomizeProblem(ex, request) : body;
         if (request.getResponse().isCommitted()) {
             return Mono.error(ex);
         }
