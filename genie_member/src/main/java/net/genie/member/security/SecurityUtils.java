@@ -1,5 +1,7 @@
 package net.genie.member.security;
 
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,13 +28,13 @@ public final class SecurityUtils {
 
     /**
      * Get the login of the current user.
-     *
+     * mapNotNull() converts a null mapping result into an empty publisher. 
      * @return the login of the current user.
      */
     public static Mono<String> getCurrentUserLogin() {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .flatMap(authentication -> Mono.justOrEmpty(extractPrincipal(authentication)));
+        	     .mapNotNull(SecurityContext::getAuthentication)
+        	     .mapNotNull(SecurityUtils::extractPrincipal);
     }
 
     private static String extractPrincipal(Authentication authentication) {
@@ -42,11 +44,11 @@ public final class SecurityUtils {
         } else if (authentication.getPrincipal() instanceof UserDetails springSecurityUser) {
             return springSecurityUser.getUsername();
         } else if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            return (String) jwtToken.getToken().getClaims().get("preferred_username");
+            return (String) jwtToken.getToken().getClaims().get(PREFERRED_USERNAME);
         } else if (authentication.getPrincipal() instanceof DefaultOidcUser oidcUser) {
             Map<String, Object> attributes = oidcUser.getAttributes();
-            if (attributes.containsKey("preferred_username")) {
-                return (String) attributes.get("preferred_username");
+            if (attributes.containsKey(PREFERRED_USERNAME)) {
+                return (String) attributes.get(PREFERRED_USERNAME);
             }
         } else if (authentication.getPrincipal() instanceof String s) {
             return s;
@@ -61,8 +63,8 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> isAuthenticated() {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .map(Authentication::getAuthorities)
+            .mapNotNull(SecurityContext::getAuthentication)
+            .mapNotNull(Authentication::getAuthorities)
             .map(authorities -> authorities.stream().map(GrantedAuthority::getAuthority).noneMatch(AuthoritiesConstants.ANONYMOUS::equals));
     }
 
@@ -74,8 +76,8 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> hasCurrentUserAnyOfAuthorities(String... authorities) {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .map(Authentication::getAuthorities)
+            .mapNotNull(SecurityContext::getAuthentication)
+            .mapNotNull(Authentication::getAuthorities)
             .map(authorityList ->
                 authorityList
                     .stream()

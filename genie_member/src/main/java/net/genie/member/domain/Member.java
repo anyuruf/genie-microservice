@@ -18,7 +18,6 @@ import org.springframework.data.relational.core.mapping.Table;
 @Schema(description = "Entities for product microservice")
 @Table("member")
 @JsonIgnoreProperties(value = { "new" })
-@SuppressWarnings("common-java:DuplicatedBlocks")
 public class Member implements Serializable, Persistable<String> {
 
     @Serial
@@ -163,10 +162,10 @@ public class Member implements Serializable, Persistable<String> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Member)) {
+        if (!(o instanceof Member other)) {
             return false;
         }
-        return getId() != null && getId().equals(((Member) o).getId());
+        return getId() != null && getId().equals(other.getId());
     }
 
     @Override
