@@ -2,7 +2,6 @@ package net.genie.member.web.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +21,8 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.ForwardedHeaderUtils;
+import org.springframework.web.util.UriComponentsBuilder;
+
 import reactor.core.publisher.Mono;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
@@ -68,13 +69,12 @@ public class ChildrenByMotherResource {
             throw new BadRequestAlertException("A new childrenByMother cannot already have an ID", ENTITY_NAME, "idexists");
         }
         return childrenByMotherService.save(childrenByMother).map(result -> {
-            try {
-                return ResponseEntity.created(new URI("/api/children-by-mothers/" + result.getId()))
+                return ResponseEntity.created( UriComponentsBuilder
+                        .fromPath("/api/children-by-mothers/{id}")
+                        .buildAndExpand(result.getId())
+                        .toUri())
                     .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId().toString()))
                     .body(result);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
         });
     }
 
@@ -102,7 +102,7 @@ public class ChildrenByMotherResource {
         }
 
         return childrenByMotherRepository.existsById(id).flatMap(exists -> {
-            if (!exists) {
+            if (Boolean.FALSE.equals(exists)) {
                 return Mono.error(new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound"));
             }
 
@@ -142,7 +142,7 @@ public class ChildrenByMotherResource {
         }
 
         return childrenByMotherRepository.existsById(id).flatMap(exists -> {
-            if (!exists) {
+            if (Boolean.FALSE.equals(exists)) {
                 return Mono.error(new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound"));
             }
 
