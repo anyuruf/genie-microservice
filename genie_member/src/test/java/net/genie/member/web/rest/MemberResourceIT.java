@@ -3,8 +3,6 @@ package net.genie.member.web.rest;
 import static net.genie.member.domain.MemberAsserts.*;
 import static net.genie.member.web.rest.TestUtil.createUpdateProxyForBean;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 import java.time.Instant;
@@ -112,10 +110,6 @@ class MemberResourceIT {
     @BeforeEach
     void setupCsrf() {
         webTestClient = webTestClient.mutateWith(csrf());
-    }
-
-    @BeforeEach
-    void initTest() {
         member = createEntity();
     }
 
@@ -228,21 +222,19 @@ class MemberResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.[*].id")
-            .value(hasItem(member.getId()))
-            .jsonPath("$.[*].firstName")
-            .value(hasItem(DEFAULT_FIRST_NAME))
-            .jsonPath("$.[*].lastName")
-            .value(hasItem(DEFAULT_LAST_NAME))
-            .jsonPath("$.[*].description")
-            .value(hasItem(DEFAULT_DESCRIPTION))
-            .jsonPath("$.[*].gender")
-            .value(hasItem(DEFAULT_GENDER.toString()))
-            .jsonPath("$.[*].dob")
-            .value(hasItem(DEFAULT_DOB.toString()))
-            .jsonPath("$.[*].imageUrl")
-            .value(hasItem(DEFAULT_IMAGE_URL));
+            .expectBodyList(Member.class)
+            .value(members -> {
+                assertThat(members).isNotEmpty();
+
+                assertThat(members).anySatisfy(memb -> {
+                    assertThat(memb.getId()).isEqualTo(member.getId());
+                    assertThat(memb.getDescription()).isEqualTo(DEFAULT_DESCRIPTION);
+                    assertThat(memb.getImageUrl()).isEqualTo(DEFAULT_IMAGE_URL);
+                    assertThat(memb.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                    assertThat(memb.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                    assertThat(memb.getGender()).isEqualTo(DEFAULT_GENDER);
+                    assertThat(memb.getDob()).isEqualTo(DEFAULT_DOB);
+                }); });
     }
 
     @Test
@@ -261,21 +253,16 @@ class MemberResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.id")
-            .value(is(member.getId()))
-            .jsonPath("$.firstName")
-            .value(is(DEFAULT_FIRST_NAME))
-            .jsonPath("$.lastName")
-            .value(is(DEFAULT_LAST_NAME))
-            .jsonPath("$.description")
-            .value(is(DEFAULT_DESCRIPTION))
-            .jsonPath("$.gender")
-            .value(is(DEFAULT_GENDER.toString()))
-            .jsonPath("$.dob")
-            .value(is(DEFAULT_DOB.toString()))
-            .jsonPath("$.imageUrl")
-            .value(is(DEFAULT_IMAGE_URL));
+            .expectBody(Member.class)
+            .value(memb -> {
+                assertThat(memb.getId()).isEqualTo(member.getId());
+                    assertThat(memb.getDescription()).isEqualTo(DEFAULT_DESCRIPTION);
+                    assertThat(memb.getImageUrl()).isEqualTo(DEFAULT_IMAGE_URL);
+                    assertThat(memb.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                    assertThat(memb.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                    assertThat(memb.getGender()).isEqualTo(DEFAULT_GENDER);
+                    assertThat(memb.getDob()).isEqualTo(DEFAULT_DOB);
+                }); 
     }
 
     @Test
@@ -543,13 +530,11 @@ class MemberResourceIT {
 
     protected void assertPersistedMemberToMatchAllProperties(Member expectedMember) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertMemberAllPropertiesEquals(expectedMember, getPersistedMember(expectedMember));
         assertMemberUpdatableFieldsEquals(expectedMember, getPersistedMember(expectedMember));
     }
 
     protected void assertPersistedMemberToMatchUpdatableProperties(Member expectedMember) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertMemberAllUpdatablePropertiesEquals(expectedMember, getPersistedMember(expectedMember));
         assertMemberUpdatableFieldsEquals(expectedMember, getPersistedMember(expectedMember));
     }
 }

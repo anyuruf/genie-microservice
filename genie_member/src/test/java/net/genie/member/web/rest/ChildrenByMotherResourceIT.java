@@ -3,14 +3,13 @@ package net.genie.member.web.rest;
 import static net.genie.member.domain.ChildrenByMotherAsserts.*;
 import static net.genie.member.web.rest.TestUtil.createUpdateProxyForBean;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import net.genie.member.IntegrationTest;
+import net.genie.member.domain.ChildrenByFather;
 import net.genie.member.domain.ChildrenByMother;
 import net.genie.member.domain.enumeration.Gender;
 import net.genie.member.repository.ChildrenByMotherRepository;
@@ -272,23 +271,20 @@ class ChildrenByMotherResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.[*].id")
-            .value(hasItem(childrenByMother.getId().intValue()))
-            .jsonPath("$.[*].motherId")
-            .value(hasItem(DEFAULT_MOTHER_ID))
-            .jsonPath("$.[*].childId")
-            .value(hasItem(DEFAULT_CHILD_ID))
-            .jsonPath("$.[*].fatherId")
-            .value(hasItem(DEFAULT_FATHER_ID))
-            .jsonPath("$.[*].firstName")
-            .value(hasItem(DEFAULT_FIRST_NAME))
-            .jsonPath("$.[*].lastName")
-            .value(hasItem(DEFAULT_LAST_NAME))
-            .jsonPath("$.[*].gender")
-            .value(hasItem(DEFAULT_GENDER.toString()))
-            .jsonPath("$.[*].dob")
-            .value(hasItem(DEFAULT_DOB.toString()));
+            .expectBodyList(ChildrenByMother.class)
+            .value(children -> {
+                assertThat(children).isNotEmpty();
+
+                assertThat(children).anySatisfy(child -> {
+                    assertThat(child.getId()).isEqualTo(childrenByMother.getId());
+                    assertThat(child.getFatherId()).isEqualTo(DEFAULT_MOTHER_ID);
+                    assertThat(child.getChildId()).isEqualTo(DEFAULT_CHILD_ID);
+                    assertThat(child.getMotherId()).isEqualTo(DEFAULT_FATHER_ID);
+                    assertThat(child.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                    assertThat(child.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                    assertThat(child.getGender()).isEqualTo(DEFAULT_GENDER);
+                    assertThat(child.getDob()).isEqualTo(DEFAULT_DOB);
+                }); });
     }
 
     @Test
@@ -306,23 +302,17 @@ class ChildrenByMotherResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.id")
-            .value(is(childrenByMother.getId().intValue()))
-            .jsonPath("$.motherId")
-            .value(is(DEFAULT_MOTHER_ID))
-            .jsonPath("$.childId")
-            .value(is(DEFAULT_CHILD_ID))
-            .jsonPath("$.fatherId")
-            .value(is(DEFAULT_FATHER_ID))
-            .jsonPath("$.firstName")
-            .value(is(DEFAULT_FIRST_NAME))
-            .jsonPath("$.lastName")
-            .value(is(DEFAULT_LAST_NAME))
-            .jsonPath("$.gender")
-            .value(is(DEFAULT_GENDER.toString()))
-            .jsonPath("$.dob")
-            .value(is(DEFAULT_DOB.toString()));
+            .expectBody(ChildrenByFather.class)
+            .value(child -> {
+                assertThat(child.getId()).isEqualTo(childrenByMother.getId());
+                assertThat(child.getFatherId()).isEqualTo(DEFAULT_MOTHER_ID);
+                assertThat(child.getChildId()).isEqualTo(DEFAULT_CHILD_ID);
+                assertThat(child.getMotherId()).isEqualTo(DEFAULT_FATHER_ID);
+                assertThat(child.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                assertThat(child.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                assertThat(child.getGender()).isEqualTo(DEFAULT_GENDER);
+                assertThat(child.getDob()).isEqualTo(DEFAULT_DOB);
+            });
     }
 
     @Test
@@ -594,13 +584,11 @@ class ChildrenByMotherResourceIT {
 
     protected void assertPersistedChildrenByMotherToMatchAllProperties(ChildrenByMother expectedChildrenByMother) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertChildrenByMotherAllPropertiesEquals(expectedChildrenByMother, getPersistedChildrenByMother(expectedChildrenByMother));
         assertChildrenByMotherUpdatableFieldsEquals(expectedChildrenByMother, getPersistedChildrenByMother(expectedChildrenByMother));
     }
 
     protected void assertPersistedChildrenByMotherToMatchUpdatableProperties(ChildrenByMother expectedChildrenByMother) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertChildrenByMotherAllUpdatablePropertiesEquals(expectedChildrenByMother, getPersistedChildrenByMother(expectedChildrenByMother));
         assertChildrenByMotherUpdatableFieldsEquals(expectedChildrenByMother, getPersistedChildrenByMother(expectedChildrenByMother));
     }
 }
