@@ -6,6 +6,8 @@ import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
+
 import net.genie.member.domain.enumeration.Gender;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Persistable;
@@ -165,7 +167,7 @@ public class Member implements Serializable, Persistable<String> {
         if (!(o instanceof Member other)) {
             return false;
         }
-        return getId() != null && getId().equals(other.getId());
+        return getId() != null && Objects.equals(getId(),other.getId());
     }
 
     @Override

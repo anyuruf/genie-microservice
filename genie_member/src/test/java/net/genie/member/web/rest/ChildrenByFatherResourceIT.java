@@ -3,8 +3,6 @@ package net.genie.member.web.rest;
 import static net.genie.member.domain.ChildrenByFatherAsserts.*;
 import static net.genie.member.web.rest.TestUtil.createUpdateProxyForBean;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 import java.time.Instant;
@@ -121,10 +119,6 @@ class ChildrenByFatherResourceIT {
     @BeforeEach
     void setupCsrf() {
         webTestClient = webTestClient.mutateWith(csrf());
-    }
-
-    @BeforeEach
-    void initTest() {
         childrenByFather = createEntity();
     }
 
@@ -276,23 +270,20 @@ class ChildrenByFatherResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.[*].id")
-            .value(hasItem(childrenByFather.getId().intValue()))
-            .jsonPath("$.[*].fatherId")
-            .value(hasItem(DEFAULT_FATHER_ID))
-            .jsonPath("$.[*].childId")
-            .value(hasItem(DEFAULT_CHILD_ID))
-            .jsonPath("$.[*].motherId")
-            .value(hasItem(DEFAULT_MOTHER_ID))
-            .jsonPath("$.[*].firstName")
-            .value(hasItem(DEFAULT_FIRST_NAME))
-            .jsonPath("$.[*].lastName")
-            .value(hasItem(DEFAULT_LAST_NAME))
-            .jsonPath("$.[*].gender")
-            .value(hasItem(DEFAULT_GENDER.toString()))
-            .jsonPath("$.[*].dob")
-            .value(hasItem(DEFAULT_DOB.toString()));
+            .expectBodyList(ChildrenByFather.class)
+            .value(children -> {
+                assertThat(children).isNotEmpty();
+
+                assertThat(children).anySatisfy(child -> {
+                    assertThat(child.getId()).isEqualTo(childrenByFather.getId());
+                    assertThat(child.getFatherId()).isEqualTo(DEFAULT_FATHER_ID);
+                    assertThat(child.getChildId()).isEqualTo(DEFAULT_CHILD_ID);
+                    assertThat(child.getMotherId()).isEqualTo(DEFAULT_MOTHER_ID);
+                    assertThat(child.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                    assertThat(child.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                    assertThat(child.getGender()).isEqualTo(DEFAULT_GENDER);
+                    assertThat(child.getDob()).isEqualTo(DEFAULT_DOB);
+                }); });
     }
 
     @Test
@@ -310,23 +301,17 @@ class ChildrenByFatherResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.id")
-            .value(is(childrenByFather.getId().intValue()))
-            .jsonPath("$.fatherId")
-            .value(is(DEFAULT_FATHER_ID))
-            .jsonPath("$.childId")
-            .value(is(DEFAULT_CHILD_ID))
-            .jsonPath("$.motherId")
-            .value(is(DEFAULT_MOTHER_ID))
-            .jsonPath("$.firstName")
-            .value(is(DEFAULT_FIRST_NAME))
-            .jsonPath("$.lastName")
-            .value(is(DEFAULT_LAST_NAME))
-            .jsonPath("$.gender")
-            .value(is(DEFAULT_GENDER.toString()))
-            .jsonPath("$.dob")
-            .value(is(DEFAULT_DOB.toString()));
+            .expectBody(ChildrenByFather.class)
+            .value(child -> {
+                assertThat(child.getId()).isEqualTo(childrenByFather.getId());
+                assertThat(child.getFatherId()).isEqualTo(DEFAULT_FATHER_ID);
+                assertThat(child.getChildId()).isEqualTo(DEFAULT_CHILD_ID);
+                assertThat(child.getMotherId()).isEqualTo(DEFAULT_MOTHER_ID);
+                assertThat(child.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
+                assertThat(child.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
+                assertThat(child.getGender()).isEqualTo(DEFAULT_GENDER);
+                assertThat(child.getDob()).isEqualTo(DEFAULT_DOB);
+            });
     }
 
     @Test
@@ -603,13 +588,11 @@ class ChildrenByFatherResourceIT {
 
     protected void assertPersistedChildrenByFatherToMatchAllProperties(ChildrenByFather expectedChildrenByFather) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertChildrenByFatherAllPropertiesEquals(expectedChildrenByFather, getPersistedChildrenByFather(expectedChildrenByFather));
         assertChildrenByFatherUpdatableFieldsEquals(expectedChildrenByFather, getPersistedChildrenByFather(expectedChildrenByFather));
     }
 
     protected void assertPersistedChildrenByFatherToMatchUpdatableProperties(ChildrenByFather expectedChildrenByFather) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertChildrenByFatherAllUpdatablePropertiesEquals(expectedChildrenByFather, getPersistedChildrenByFather(expectedChildrenByFather));
         assertChildrenByFatherUpdatableFieldsEquals(expectedChildrenByFather, getPersistedChildrenByFather(expectedChildrenByFather));
     }
 }

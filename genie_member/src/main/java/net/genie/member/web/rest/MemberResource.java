@@ -66,15 +66,15 @@ public class MemberResource {
             throw new BadRequestAlertException("A new member cannot already have an ID", ENTITY_NAME, "idexists");
         }
         member.setId(UUID.randomUUID().toString());
-        return memberService.save(member).map(result -> {
-                return ResponseEntity.created( UriComponentsBuilder
+        return memberService.save(member).map(result -> 
+                ResponseEntity.created( UriComponentsBuilder
                         .fromPath("/api/members/{id}")
                         .buildAndExpand(result.getId())
                         .toUri())
                     .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId()))
-                    .body(result);
+                    .body(result)
        
-        });
+        );
     }
 
     /**

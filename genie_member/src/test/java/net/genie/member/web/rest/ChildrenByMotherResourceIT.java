@@ -121,10 +121,6 @@ class ChildrenByMotherResourceIT {
     @BeforeEach
     void setupCsrf() {
         webTestClient = webTestClient.mutateWith(csrf());
-    }
-
-    @BeforeEach
-    void initTest() {
         childrenByMother = createEntity();
     }
 

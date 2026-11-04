@@ -68,16 +68,15 @@ public class ChildrenByFatherResource {
         if (childrenByFather.getId() != null) {
             throw new BadRequestAlertException("A new childrenByFather cannot already have an ID", ENTITY_NAME, "idexists");
         }
-        return childrenByFatherService.save(childrenByFather).map(result -> {
-           
-                return ResponseEntity.created(UriComponentsBuilder
+        return childrenByFatherService.save(childrenByFather).map(result -> 
+               ResponseEntity.created(UriComponentsBuilder
                         .fromPath("/api/children-by-fathers/{id}")
                         .buildAndExpand(result.getId())
                         .toUri())
                     .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId().toString()))
-                    .body(result);
+                    .body(result)
            
-        });
+        );
     }
 
     /**
