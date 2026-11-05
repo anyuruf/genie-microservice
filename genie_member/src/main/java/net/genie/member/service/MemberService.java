@@ -56,9 +56,15 @@ public class MemberService {
      */
     public Mono<Member> partialUpdate(Member member) {
         LOG.debug("Request to partially update Member : {}", member);
+        
+        var getId = member.getId();
+        
+        if (getId == null) {
+			return Mono.error(new IllegalArgumentException("Member ID must not be null for partial update"));
+		}
 
         return memberRepository
-            .findById(member.getId())
+            .findById(getId)
             .map(existingMember -> {
                 updateIfPresent(existingMember::setFirstName, member.getFirstName());
                 updateIfPresent(existingMember::setLastName, member.getLastName());

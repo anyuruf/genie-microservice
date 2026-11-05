@@ -89,11 +89,11 @@ public class MemberResource {
      */
     @PutMapping("/{id}")
     public Mono<ResponseEntity<Member>> updateMember(
-        @PathVariable(value = "id", required = false) final String id,
+        @PathVariable(value = "id") final String id,
         @Valid @RequestBody Member member
     ) throws URISyntaxException {
         LOG.debug("REST request to update Member : {}, {}", id, member);
-        if (member.getId() == null) {
+        if (member.getId() == null || id == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
         if (!Objects.equals(id, member.getId())) {
@@ -133,7 +133,7 @@ public class MemberResource {
         @NotNull @RequestBody Member member
     ) throws URISyntaxException {
         LOG.debug("REST request to partially update Member : {}, {}", id, member);
-        if (member.getId() == null) {
+        if (member.getId() == null || id == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
         if (!Objects.equals(id, member.getId())) {

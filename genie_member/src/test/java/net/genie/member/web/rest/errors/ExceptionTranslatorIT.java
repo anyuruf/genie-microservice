@@ -1,16 +1,16 @@
 package net.genie.member.web.rest.errors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 import net.genie.member.IntegrationTest;
-import org.hamcrest.core.AnyOf;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -123,13 +123,18 @@ class ExceptionTranslatorIT {
             .isUnauthorized()
             .expectHeader()
             .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .expectBody()
-            .jsonPath("$.message")
-            .isEqualTo("error.http.401")
-            .jsonPath("$.path")
-            .isEqualTo("/api/exception-translator-test/unauthorized")
-            .jsonPath("$.detail")
-            .value(AnyOf.anyOf(IsEqual.equalTo("test authentication failed!"), IsEqual.equalTo("Invalid credentials")));
+            .expectBody(ProblemDetail.class)
+            .value(problem -> {
+                assertThat(problem.getStatus()).isEqualTo(401);
+
+                assertThat(problem.getProperties())
+                    .containsEntry("message", "error.http.401")
+                    .containsEntry("path", "/api/exception-translator-test/unauthorized");
+
+                assertThat(problem.getDetail())
+                    .isIn("test authentication failed!", "Invalid credentials");
+            });
+
     }
 
     @Test
