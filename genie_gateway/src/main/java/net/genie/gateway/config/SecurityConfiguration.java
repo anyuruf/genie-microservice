@@ -7,10 +7,9 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.genie.gateway.security.AuthoritiesConstants;
@@ -161,12 +160,7 @@ public class SecurityConfiguration {
     Converter<Jwt, Mono<AbstractAuthenticationToken>> jwtAuthenticationConverter() {
         ReactiveJwtAuthenticationConverter jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(
-            new Converter<Jwt, Flux<GrantedAuthority>>() {
-                @Override
-                public Flux<GrantedAuthority> convert(Jwt jwt) {
-                    return Flux.fromIterable(SecurityUtils.extractAuthorityFromClaims(jwt.getClaims()));
-                }
-            }
+        		jwt -> Flux.fromIterable(SecurityUtils.extractAuthorityFromClaims(jwt.getClaims()))
         );
         jwtAuthenticationConverter.setPrincipalClaimName(PREFERRED_USERNAME);
         return jwtAuthenticationConverter;
@@ -181,9 +175,8 @@ public class SecurityConfiguration {
     public ReactiveOAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
         final OidcReactiveOAuth2UserService delegate = new OidcReactiveOAuth2UserService();
 
-        return userRequest -> {
-            // Delegate to the default implementation for loading a user
-            return delegate.loadUser(userRequest).map(user -> {
+        // Delegate to the default implementation for loading a user
+        return userRequest -> delegate.loadUser(userRequest).map(user -> {
                 Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
 
                 user.getAuthorities().forEach(authority -> {
@@ -194,7 +187,6 @@ public class SecurityConfiguration {
 
                 return new DefaultOidcUser(mappedAuthorities, user.getIdToken(), user.getUserInfo(), PREFERRED_USERNAME);
             });
-        };
     }
 
     @Bean
@@ -212,62 +204,78 @@ public class SecurityConfiguration {
             .block();
     }
 
+    private Mono<Jwt> enrichJwt(String token, Jwt jwt, String userInfoUri) {
+        if (jwt.hasClaim("given_name") && jwt.hasClaim("family_name")) {
+            return Mono.just(jwt);
+        }
+        
+        String subject = Objects.requireNonNull(jwt.getSubject(), "JWT subject is required");
+        
+        Mono<Jwt> cached = users.getIfPresent(subject);
+        if (cached != null) {
+            return cached;
+        }
+        return fetchAndBuildJwt(token, jwt, userInfoUri)
+                .doOnNext(newJwt -> users.put(jwt.getSubject(), Mono.just(newJwt)));
+    }
+
+    private Mono<Jwt> fetchAndBuildJwt(String token, Jwt jwt, String userInfoUri) {
+        return WebClient.create()
+            .get()
+            .uri(userInfoUri)
+            .headers(h -> h.setBearerAuth(token))
+            .retrieve()
+            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+            .map(userInfo -> buildJwtWithUserInfo(jwt, userInfo));
+    }
+
+    private Jwt buildJwtWithUserInfo(Jwt jwt, Map<String, Object> userInfo) {
+        enrichAuth0UserInfo(userInfo);
+        enrichNameClaims(userInfo);
+
+        return Jwt.withTokenValue(jwt.getTokenValue())
+            .headers(headers -> headers.putAll(jwt.getHeaders()))
+            .claims(claims -> {
+                claims.putAll(userInfo);
+                claims.putAll(jwt.getClaims());
+            })
+            .build();
+    }
+
+    private void enrichAuth0UserInfo(Map<String, Object> userInfo) {
+        String subject = Objects.toString(userInfo.get("sub"), "");
+        String username = Objects.toString(userInfo.get("preferred_username"), "");
+
+        if (subject.contains("|") && username.contains("@")) {
+            userInfo.put("email", username);
+        }
+    }
+
+    private void enrichNameClaims(Map<String, Object> userInfo) {
+        Object nameClaim = userInfo.get("name");
+
+        if (nameClaim == null) {
+            return;
+        }
+
+        String[] name = nameClaim.toString().trim().split("\\s+", 2);
+
+        userInfo.put("given_name", name[0]);
+
+        if (name.length > 1) {
+            userInfo.put("family_name", name[1]);
+        }
+    }
+    
     private ReactiveJwtDecoder createJwtDecoder(String issuerUri, String jwkSetUri, String userInfoUri) {
-        NimbusReactiveJwtDecoder jwtDecoder = new NimbusReactiveJwtDecoder(jwkSetUri);
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(jHipsterProperties.getSecurity().getOauth2().getAudience());
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
-        OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
+    	 NimbusReactiveJwtDecoder jwtDecoder = new NimbusReactiveJwtDecoder(jwkSetUri);
+    	    OAuth2TokenValidator<Jwt> audienceValidator =
+    	            new AudienceValidator(jHipsterProperties.getSecurity().getOauth2().getAudience());
+    	    jwtDecoder.setJwtValidator(
+    	            new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuerUri),
+    	                                                 audienceValidator));
 
-        jwtDecoder.setJwtValidator(withAudience);
-
-        return new ReactiveJwtDecoder() {
-            @Override
-            public Mono<Jwt> decode(String token) throws JwtException {
-                return jwtDecoder.decode(token).flatMap(jwt -> enrich(token, jwt));
-            }
-
-            private Mono<Jwt> enrich(String token, Jwt jwt) {
-                // Only look up user information if identity claims are missing
-                if (jwt.hasClaim("given_name") && jwt.hasClaim("family_name")) {
-                    return Mono.just(jwt);
-                }
-                // Get user info from `users` cache if present
-                return Optional.ofNullable(users.getIfPresent(jwt.getSubject())).orElseGet(() ->
-                    WebClient.create()
-                        .get()
-                        .uri(userInfoUri)
-                        .headers(headers -> headers.setBearerAuth(token))
-                        .retrieve()
-                        .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                        .map(userInfo ->
-                            Jwt.withTokenValue(jwt.getTokenValue())
-                                .subject(jwt.getSubject())
-                                .audience(jwt.getAudience())
-                                .headers(headers -> headers.putAll(jwt.getHeaders()))
-                                .claims(claims -> {
-                                    String username = userInfo.get("preferred_username").toString();
-                                    // special handling for Auth0
-                                    if (userInfo.get("sub").toString().contains("|") && username.contains("@")) {
-                                        userInfo.put("email", username);
-                                    }
-                                    // Allow full name in a name claim - happens with Auth0
-                                    if (userInfo.get("name") != null) {
-                                        String[] name = userInfo.get("name").toString().split("\\s+");
-                                        if (name.length > 0) {
-                                            userInfo.put("given_name", name[0]);
-                                            userInfo.put("family_name", String.join(" ", Arrays.copyOfRange(name, 1, name.length)));
-                                        }
-                                    }
-                                    claims.putAll(userInfo);
-                                })
-                                .claims(claims -> claims.putAll(jwt.getClaims()))
-                                .build()
-                        )
-                        // Retrieve user info from OAuth provider if not already loaded
-                        // Put user info into the `users` cache
-                        .doOnNext(newJwt -> users.put(jwt.getSubject(), Mono.just(newJwt)))
-                );
-            }
-        };
+    	    return token -> jwtDecoder.decode(token)
+    	                              .flatMap(jwt -> enrichJwt(token, jwt, userInfoUri));
     }
 }
