@@ -38,23 +38,36 @@ public final class SecurityUtils {
     }
 
     private static String extractPrincipal(Authentication authentication) {
-        // AnonymousAuthenticationToken has a String principal that would fall through below
+        // AnonymousAuthenticationToken has a String principal that would fall through below 
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             return null;
-        } else if (authentication.getPrincipal() instanceof UserDetails springSecurityUser) {
-            return springSecurityUser.getUsername();
-        } else if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            return (String) jwtToken.getToken().getClaims().get(PREFERRED_USERNAME);
-        } else if (authentication.getPrincipal() instanceof DefaultOidcUser oidcUser) {
-            Map<String, Object> attributes = oidcUser.getAttributes();
-            if (attributes.containsKey(PREFERRED_USERNAME)) {
-                return (String) attributes.get(PREFERRED_USERNAME);
-            }
-        } else if (authentication.getPrincipal() instanceof String s) {
-            return s;
         }
+
+        if (authentication.getPrincipal() instanceof UserDetails springSecurityUser) {
+            return springSecurityUser.getUsername();
+        }
+
+        if (authentication instanceof JwtAuthenticationToken jwtToken) {
+            return getPreferredUsername(jwtToken.getToken().getClaims());
+        }
+
+        if (authentication.getPrincipal() instanceof DefaultOidcUser oidcUser) {
+            return getPreferredUsername(oidcUser.getAttributes());
+        }
+
+        if (authentication.getPrincipal() instanceof String principal) {
+            return principal;
+        }
+
         return null;
     }
+
+    private static String getPreferredUsername(Map<String, Object> attributes) {
+        return attributes.get(PREFERRED_USERNAME) instanceof String username
+            ? username
+            : null;
+    }
+
 
     /**
      * Check if a user is authenticated.
@@ -63,9 +76,12 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> isAuthenticated() {
         return ReactiveSecurityContextHolder.getContext()
-            .mapNotNull(SecurityContext::getAuthentication)
-            .mapNotNull(Authentication::getAuthorities)
-            .map(authorities -> authorities.stream().map(GrantedAuthority::getAuthority).noneMatch(AuthoritiesConstants.ANONYMOUS::equals));
+        	.flatMap(securityContext -> Mono.justOrEmpty(securityContext.getAuthentication()))
+            .flatMap(authentication -> Mono.justOrEmpty(authentication.getAuthorities())
+            .map(authorities -> authorities
+            		.stream()
+            		.map(GrantedAuthority::getAuthority)
+            		.noneMatch(AuthoritiesConstants.ANONYMOUS::equals)));
     }
 
     /**
@@ -76,14 +92,13 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> hasCurrentUserAnyOfAuthorities(String... authorities) {
         return ReactiveSecurityContextHolder.getContext()
-            .mapNotNull(SecurityContext::getAuthentication)
-            .mapNotNull(Authentication::getAuthorities)
-            .map(authorityList ->
-                authorityList
+        	.flatMap(securityContext -> Mono.justOrEmpty(securityContext.getAuthentication()))
+            .flatMap(authentication -> Mono.justOrEmpty(authentication.getAuthorities())
+            .map(authorityList -> authorityList
                     .stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(authority -> List.of(authorities).contains(authority))
-            );
+            ));
     }
 
     /**

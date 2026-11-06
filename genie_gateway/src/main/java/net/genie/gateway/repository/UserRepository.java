@@ -103,14 +103,20 @@ class UserRepositoryInternalImpl implements UserRepositoryInternal {
 
     @Override
     public Mono<Void> delete(User user) {
+    	var getId = user.getId();
+    	
+    	if (getId == null) {
+			return Mono.error(new IllegalArgumentException("User ID must not be null"));
+		}
+    	
         return db
             .sql("DELETE FROM jhi_user_authority WHERE user_id = :userId")
-            .bind("userId", user.getId())
+            .bind("userId", getId)
             .then()
             .then(
                 r2dbcEntityTemplate
                     .delete(User.class)
-                    .matching(query(where("id").is(user.getId())))
+                    .matching(query(where("id").is(getId)))
                     .all()
                     .then()
             );

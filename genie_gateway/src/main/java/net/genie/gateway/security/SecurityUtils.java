@@ -1,18 +1,21 @@
 package net.genie.gateway.security;
 
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
 import reactor.core.publisher.Mono;
 
 /**
@@ -30,9 +33,9 @@ public final class SecurityUtils {
      * @return the login of the current user.
      */
     public static Mono<String> getCurrentUserLogin() {
-        return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .flatMap(authentication -> Mono.justOrEmpty(extractPrincipal(authentication)));
+    	return ReactiveSecurityContextHolder.getContext()
+    	        .flatMap(securityContext -> Mono.justOrEmpty(securityContext.getAuthentication()))
+    	        .flatMap(authentication -> Mono.justOrEmpty(extractPrincipal(authentication)));
     }
 
     private static String extractPrincipal(Authentication authentication) {
@@ -42,11 +45,11 @@ public final class SecurityUtils {
         } else if (authentication.getPrincipal() instanceof UserDetails springSecurityUser) {
             return springSecurityUser.getUsername();
         } else if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            return (String) jwtToken.getToken().getClaims().get("preferred_username");
+            return (String) jwtToken.getToken().getClaims().get(PREFERRED_USERNAME);
         } else if (authentication.getPrincipal() instanceof DefaultOidcUser oidcUser) {
             Map<String, Object> attributes = oidcUser.getAttributes();
-            if (attributes.containsKey("preferred_username")) {
-                return (String) attributes.get("preferred_username");
+            if (attributes.containsKey(PREFERRED_USERNAME)) {
+                return (String) attributes.get(PREFERRED_USERNAME);
             }
         } else if (authentication.getPrincipal() instanceof String s) {
             return s;
@@ -61,9 +64,12 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> isAuthenticated() {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .map(Authentication::getAuthorities)
-            .map(authorities -> authorities.stream().map(GrantedAuthority::getAuthority).noneMatch(AuthoritiesConstants.ANONYMOUS::equals));
+            .flatMap(securityContext -> Mono.justOrEmpty(securityContext.getAuthentication()))
+            .flatMap(authentication -> Mono.justOrEmpty(authentication.getAuthorities())
+            .map(authorities -> authorities
+            		.stream()
+            		.map(GrantedAuthority::getAuthority)
+            		.noneMatch(AuthoritiesConstants.ANONYMOUS::equals)));
     }
 
     /**
@@ -74,14 +80,13 @@ public final class SecurityUtils {
      */
     public static Mono<Boolean> hasCurrentUserAnyOfAuthorities(String... authorities) {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .map(Authentication::getAuthorities)
-            .map(authorityList ->
-                authorityList
+        	.flatMap(securityContext -> Mono.justOrEmpty(securityContext.getAuthentication()))
+            .flatMap(authentication -> Mono.justOrEmpty(authentication.getAuthorities())
+            .map(authorityList -> authorityList
                     .stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(authority -> List.of(authorities).contains(authority))
-            );
+            ));
     }
 
     /**
