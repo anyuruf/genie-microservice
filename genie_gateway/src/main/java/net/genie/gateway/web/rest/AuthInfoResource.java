@@ -23,30 +23,6 @@ public class AuthInfoResource {
         return new AuthInfoVM(issuer, clientId);
     }
 
-    class AuthInfoVM {
-
-        private String issuer;
-        private String clientId;
-
-        AuthInfoVM(String issuer, String clientId) {
-            this.issuer = issuer;
-            this.clientId = clientId;
-        }
-
-        public String getIssuer() {
-            return this.issuer;
-        }
-
-        public void setIssuer(String issuer) {
-            this.issuer = issuer;
-        }
-
-        public String getClientId() {
-            return clientId;
-        }
-
-        public void setClientId(String clientId) {
-            this.clientId = clientId;
-        }
-    }
+    public record AuthInfoVM(String issuer, String clientId) {}
+  
 }

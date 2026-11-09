@@ -15,6 +15,8 @@ import net.genie.gateway.service.dto.AdminUserDTO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -122,34 +124,20 @@ class UserServiceIT {
         assertThat(userDTO.getLangKey()).isEqualTo(DEFAULT_LANGKEY);
     }
 
-    @Test
-    void testUserDetailsWithLocale() {
-        userDetails.put("locale", "it-IT");
+    @ParameterizedTest
+    @CsvSource({
+        "it-IT, it",
+        "en_US, en",
+        "en-US, en"
+    })
+    void testUserDetailsWithLocale(String locale, String expectedLangKey) {
+        userDetails.put("locale", locale);
 
         OAuth2AuthenticationToken authentication = createMockOAuth2AuthenticationToken(userDetails);
+
         AdminUserDTO userDTO = userService.getUserFromAuthentication(authentication).block();
 
-        assertThat(userDTO.getLangKey()).isEqualTo("it");
-    }
-
-    @Test
-    void testUserDetailsWithUSLocaleUnderscore() {
-        userDetails.put("locale", "en_US");
-
-        OAuth2AuthenticationToken authentication = createMockOAuth2AuthenticationToken(userDetails);
-        AdminUserDTO userDTO = userService.getUserFromAuthentication(authentication).block();
-
-        assertThat(userDTO.getLangKey()).isEqualTo("en");
-    }
-
-    @Test
-    void testUserDetailsWithUSLocaleDash() {
-        userDetails.put("locale", "en-US");
-
-        OAuth2AuthenticationToken authentication = createMockOAuth2AuthenticationToken(userDetails);
-        AdminUserDTO userDTO = userService.getUserFromAuthentication(authentication).block();
-
-        assertThat(userDTO.getLangKey()).isEqualTo("en");
+        assertThat(userDTO.getLangKey()).isEqualTo(expectedLangKey);
     }
 
     private OAuth2AuthenticationToken createMockOAuth2AuthenticationToken(Map<String, Object> userDetails) {
