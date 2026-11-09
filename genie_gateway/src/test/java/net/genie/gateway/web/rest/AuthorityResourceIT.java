@@ -81,10 +81,6 @@ class AuthorityResourceIT {
     @BeforeEach
     void setupCsrf() {
         webTestClient = webTestClient.mutateWith(csrf());
-    }
-
-    @BeforeEach
-    void initTest() {
         authority = createEntity();
     }
 

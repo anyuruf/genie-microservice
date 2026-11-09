@@ -182,13 +182,18 @@ public class UserService {
     @Transactional
     public Mono<AdminUserDTO> getUserFromAuthentication(AbstractAuthenticationToken authToken) {
         Map<String, Object> attributes;
-        if (authToken instanceof OAuth2AuthenticationToken) {
-            attributes = ((OAuth2AuthenticationToken) authToken).getPrincipal().getAttributes();
-        } else if (authToken instanceof JwtAuthenticationToken) {
-            attributes = ((JwtAuthenticationToken) authToken).getTokenAttributes();
-        } else {
-            throw new IllegalArgumentException("AuthenticationToken is not OAuth2 or JWT!");
+        switch (authToken) {
+          case OAuth2AuthenticationToken oAuth2AuthToken -> 
+              attributes = oAuth2AuthToken.getPrincipal().getAttributes();
+          
+          case JwtAuthenticationToken jwtAuthToken -> 
+              attributes = jwtAuthToken.getTokenAttributes();
+          
+          default -> 
+              throw new IllegalArgumentException("AuthenticationToken is not OAuth2 nor JWT!");
         }
+        
+        
         User user = getUser(attributes);
         user.setAuthorities(
             authToken
@@ -206,64 +211,92 @@ public class UserService {
         return syncUserWithIdP(attributes, user).flatMap(u -> Mono.just(new AdminUserDTO(u)));
     }
 
-    private static User getUser(Map<String, Object> details) {
-        User user = new User();
-        Boolean activated = Boolean.TRUE;
-        String sub = String.valueOf(details.get("sub"));
-        String username = null;
-        if (details.get("preferred_username") != null) {
-            username = ((String) details.get("preferred_username")).toLowerCase();
-        }
-        // handle resource server JWT, where sub claim is email and uid is ID
-        if (details.get("uid") != null) {
-            user.setId((String) details.get("uid"));
-            user.setLogin(sub);
-        } else {
-            user.setId(sub);
-        }
-        if (username != null) {
-            user.setLogin(username);
-        } else if (user.getLogin() == null) {
-            user.setLogin(user.getId());
-        }
-        if (details.get("given_name") != null) {
-            user.setFirstName((String) details.get("given_name"));
-        } else if (details.get("name") != null) {
-            user.setFirstName((String) details.get("name"));
-        }
-        if (details.get("family_name") != null) {
-            user.setLastName((String) details.get("family_name"));
-        }
-        if (details.get("email_verified") != null) {
-            activated = (Boolean) details.get("email_verified");
-        }
-        if (details.get("email") != null) {
-            user.setEmail(((String) details.get("email")).toLowerCase());
-        } else if (sub.contains("|") && username != null && username.contains("@")) {
-            // special handling for Auth0
-            user.setEmail(username);
-        } else {
-            user.setEmail(sub);
-        }
-        if (details.get("langKey") != null) {
-            user.setLangKey((String) details.get("langKey"));
-        } else if (details.get("locale") != null) {
-            // trim off country code if it exists
-            String locale = (String) details.get("locale");
-            if (locale.contains("_")) {
-                locale = locale.substring(0, locale.indexOf('_'));
-            } else if (locale.contains("-")) {
-                locale = locale.substring(0, locale.indexOf('-'));
-            }
-            user.setLangKey(locale.toLowerCase());
-        } else {
-            // set langKey to default if not specified by IdP
-            user.setLangKey(Constants.DEFAULT_LANGUAGE);
-        }
-        if (details.get("picture") != null) {
-            user.setImageUrl((String) details.get("picture"));
-        }
-        user.setActivated(activated);
-        return user;
+
+private static User getUser(Map<String, Object> details) {
+    User user = new User();
+
+    String sub = String.valueOf(details.get("sub"));
+    String username = getUsername(details);
+
+    setIdentity(user, details, sub, username);
+    setPersonalDetails(user, details);
+    user.setEmail(getEmail(details, sub, username));
+    user.setLangKey(getLanguage(details));
+    user.setImageUrl((String) details.get("picture"));
+    user.setActivated(getActivated(details));
+
+    return user;
+}
+
+private static String getUsername(Map<String, Object> details) {
+    return Optional.ofNullable((String) details.get("preferred_username"))
+        .map(String::toLowerCase)
+        .orElse(null);
+}
+
+private static void setIdentity(
+    User user,
+    Map<String, Object> details,
+    String sub,
+    String username
+) {
+    String uid = (String) details.get("uid");
+
+    // Resource server JWT: sub is email and uid is ID.
+    user.setId(uid != null ? uid : sub);
+
+    user.setLogin(username != null ? username : uid != null ? sub : user.getId());
+}
+
+private static void setPersonalDetails(User user, Map<String, Object> details) {
+    String firstName = (String) details.get("given_name");
+
+    if (firstName == null) {
+        firstName = (String) details.get("name");
     }
+
+    user.setFirstName(firstName);
+    user.setLastName((String) details.get("family_name"));
+}
+
+private static String getEmail(
+    Map<String, Object> details,
+    String sub,
+    String username
+) {
+    String email = (String) details.get("email");
+
+    if (email != null) {
+        return email.toLowerCase();
+    }
+
+    // Special handling for Auth0.
+    if (sub.contains("|") && username != null && username.contains("@")) {
+        return username;
+    }
+
+    return sub;
+}
+
+private static String getLanguage(Map<String, Object> details) {
+    String langKey = (String) details.get("langKey");
+
+    if (langKey != null) {
+        return langKey;
+    }
+
+    String locale = (String) details.get("locale");
+
+    if (locale == null) {
+        return Constants.DEFAULT_LANGUAGE;
+    }
+
+    // Trim off country code if it exists.
+    return locale.split("[_-]", 2)[0].toLowerCase();
+}
+
+private static Boolean getActivated(Map<String, Object> details) {
+    return (Boolean) details.getOrDefault("email_verified", Boolean.TRUE);
+}
+
 }

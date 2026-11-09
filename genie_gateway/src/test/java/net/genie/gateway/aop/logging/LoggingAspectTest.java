@@ -131,7 +131,7 @@ class LoggingAspectTest {
 
         Object result = aspect.logAround(joinPoint);
 
-        assertThatThrownBy(() -> ((Mono<?>) result).block())
+        assertThatThrownBy(((Mono<?>) result)::block)
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("failed");
         assertThat(messages()).contains("Exception in loggedMethod() with cause = 'NULL' and exception = 'failed'");
@@ -143,7 +143,7 @@ class LoggingAspectTest {
 
         Object result = aspect.logAround(joinPoint);
 
-        assertThatThrownBy(() -> ((Mono<?>) result).block()).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(((Mono<?>) result)::block).isInstanceOf(IllegalArgumentException.class);
         assertThat(messages()).contains("Illegal argument: [arg] in loggedMethod()");
     }
 
@@ -154,7 +154,7 @@ class LoggingAspectTest {
 
         Object result = aspect.logAround(joinPoint);
 
-        assertThatThrownBy(() -> ((Mono<?>) result).block()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(((Mono<?>) result)::block).isInstanceOf(IllegalStateException.class);
         assertThat(messages()).contains("Exception in loggedMethod() with cause = java.lang.RuntimeException: root");
         assertThat(appender.list).allSatisfy(event -> assertThat(event.getThrowableProxy()).isNull());
     }
