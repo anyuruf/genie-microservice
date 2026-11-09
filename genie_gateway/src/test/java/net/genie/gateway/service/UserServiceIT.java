@@ -44,7 +44,8 @@ class UserServiceIT {
     private static final String DEFAULT_IMAGEURL = "http://placehold.it/50x50";
 
     private static final String DEFAULT_LANGKEY = "dummy";
-
+    
+    
     @Autowired
     private UserRepository userRepository;
 
@@ -139,6 +140,7 @@ class UserServiceIT {
 
         assertThat(userDTO.getLangKey()).isEqualTo(expectedLangKey);
     }
+    
 
     private OAuth2AuthenticationToken createMockOAuth2AuthenticationToken(Map<String, Object> userDetails) {
         Collection<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(AuthoritiesConstants.ANONYMOUS));
@@ -148,8 +150,8 @@ class UserServiceIT {
             authorities
         );
         usernamePasswordAuthenticationToken.setDetails(userDetails);
-        OAuth2User user = new DefaultOAuth2User(authorities, userDetails, "sub");
+        OAuth2User oAuthUser = new DefaultOAuth2User(authorities, userDetails, "sub");
 
-        return new OAuth2AuthenticationToken(user, authorities, "oidc");
+        return new OAuth2AuthenticationToken(oAuthUser, authorities, "oidc");
     }
 }

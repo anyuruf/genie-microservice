@@ -34,6 +34,9 @@ public class UserService {
     private final UserRepository userRepository;
 
     private final AuthorityRepository authorityRepository;
+    
+    private static final String UPDATED_AT = "updated_at";
+
 
     public UserService(UserRepository userRepository, AuthorityRepository authorityRepository) {
         this.userRepository = userRepository;
@@ -151,13 +154,13 @@ public class UserService {
             .switchIfEmpty(saveUser(user, true))
             .flatMap(existingUser -> {
                 // if IdP sends last updated information, use it to determine if an update should happen
-                if (details.get("updated_at") != null) {
+                if (details.get(UPDATED_AT) != null) {
                     Instant dbModifiedDate = existingUser.getLastModifiedDate();
                     Instant idpModifiedDate;
-                    if (details.get("updated_at") instanceof Instant instant) {
+                    if (details.get(UPDATED_AT) instanceof Instant instant) {
                         idpModifiedDate = instant;
                     } else {
-                        idpModifiedDate = Instant.ofEpochSecond((Integer) details.get("updated_at"));
+                        idpModifiedDate = Instant.ofEpochSecond((Integer) details.get(UPDATED_AT));
                     }
                     if (idpModifiedDate.isAfter(dbModifiedDate)) {
                         LOG.debug("Updating user '{}' in local database", user.getLogin());
@@ -208,7 +211,7 @@ public class UserService {
                 .collect(Collectors.toSet())
         );
 
-        return syncUserWithIdP(attributes, user).flatMap(u -> Mono.just(new AdminUserDTO(u)));
+        return syncUserWithIdP(attributes, user).map(AdminUserDTO::new);
     }
 
 
@@ -244,8 +247,18 @@ private static void setIdentity(
 
     // Resource server JWT: sub is email and uid is ID.
     user.setId(uid != null ? uid : sub);
+    
+    String login;
 
-    user.setLogin(username != null ? username : uid != null ? sub : user.getId());
+    if (username != null) {
+        login = username;
+    } else if (uid != null) {
+        login = sub;
+    } else {
+        login = user.getId();
+    }
+
+    user.setLogin(login);
 }
 
 private static void setPersonalDetails(User user, Map<String, Object> details) {

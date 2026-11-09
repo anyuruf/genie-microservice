@@ -1,17 +1,13 @@
 package net.genie.gateway.web.rest;
 
-import static net.genie.gateway.domain.AuthorityAsserts.*;
+import static net.genie.gateway.domain.AuthorityAsserts.assertAuthorityUpdatableFieldsEquals;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import net.genie.gateway.IntegrationTest;
-import net.genie.gateway.domain.Authority;
-import net.genie.gateway.repository.AuthorityRepository;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +17,10 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import net.genie.gateway.IntegrationTest;
+import net.genie.gateway.domain.Authority;
+import net.genie.gateway.repository.AuthorityRepository;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -158,12 +158,11 @@ class AuthorityResourceIT {
             .collectList()
             .block(Duration.ofSeconds(5));
 
-        assertThat(authorityList).isNotNull();
-        assertThat(authorityList).hasSize(1);
+        
+        assertThat(authorityList).isNotNull().hasSize(1);
         Authority testAuthority = authorityList.getFirst();
 
         // Test fails because reactive api returns an empty object instead of null
-        // assertAuthorityAllPropertiesEquals(authority, testAuthority);
         assertAuthorityUpdatableFieldsEquals(authority, testAuthority);
     }
 
@@ -183,9 +182,14 @@ class AuthorityResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.[*].name")
-            .value(hasItem(authority.getName()));
+            .expectBodyList(Authority.class)
+            .value(authorities -> {
+                       assertThat(authorities).isNotEmpty();
+
+                       assertThat(authorities).anySatisfy(authorit -> {
+                           assertThat(authorit.getName()).isEqualTo(authority.getName());
+                       });
+                      });
     }
 
     @Test
@@ -204,10 +208,11 @@ class AuthorityResourceIT {
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON)
-            .expectBody()
-            .jsonPath("$.name")
-            .value(is(authority.getName()));
-    }
+            .expectBody(Authority.class)
+				 .value(authorit -> {
+				                assertThat(authorit.getName()).isEqualTo(authority.getName());
+				            });
+				    }
 
     @Test
     void getNonExistingAuthority() {
