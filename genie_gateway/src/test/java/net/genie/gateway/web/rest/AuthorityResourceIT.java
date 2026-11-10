@@ -269,13 +269,11 @@ class AuthorityResourceIT {
 
     protected void assertPersistedAuthorityToMatchAllProperties(Authority expectedAuthority) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertAuthorityAllPropertiesEquals(expectedAuthority, getPersistedAuthority(expectedAuthority));
         assertAuthorityUpdatableFieldsEquals(expectedAuthority, getPersistedAuthority(expectedAuthority));
     }
 
     protected void assertPersistedAuthorityToMatchUpdatableProperties(Authority expectedAuthority) {
         // Test fails because reactive api returns an empty object instead of null
-        // assertAuthorityAllUpdatablePropertiesEquals(expectedAuthority, getPersistedAuthority(expectedAuthority));
         assertAuthorityUpdatableFieldsEquals(expectedAuthority, getPersistedAuthority(expectedAuthority));
     }
 }
