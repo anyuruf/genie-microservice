@@ -53,7 +53,7 @@ public class AuthorityResource {
     public Mono<ResponseEntity<Authority>> createAuthority(@Valid @RequestBody Authority authority) throws URISyntaxException {
         LOG.debug("REST request to save Authority : {}", authority);
         return authorityRepository.existsById(authority.getName()).flatMap(exists -> {
-            if (exists) {
+            if (Boolean.TRUE.equals(exists)) {
                 return Mono.error(new BadRequestAlertException("authority already exists", ENTITY_NAME, "idexists"));
             }
             return authorityRepository.save(authority).map(result -> {
